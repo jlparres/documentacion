@@ -112,5 +112,3 @@ Las expresiones regulares se pueden usar en la mayoría de los lenguajes de prog
 
 ## Conclusión
 Las expresiones regulares son una herramienta poderosa para la búsqueda y manipulación de texto. Al comprender los componentes básicos y las sintaxis de las expresiones regulares, podrás abordar tareas complejas de procesamiento de texto de manera más eficiente. Puedes practicar creando y probando expresiones en sitios como regex101, lo cual te ayudará a entender cómo cada componente de la expresión afecta los resultados.
-
-Si tienes dudas adicionales o necesitas más ejemplos específicos, no dudes en preguntar. ¡Mucho éxito en tu aprendizaje!
