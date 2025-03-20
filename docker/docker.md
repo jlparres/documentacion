@@ -227,6 +227,70 @@ docker rmi	    | Elimina una imagen de mi ordenador
         $ curl http://localhost:5000/get?url=http://fixedguid/api/greetings
             Ahora nos devuelve distintos ids, hasta un máximo de 5, porque tenemos 5 contenedores levantados.
 
+### Ejemplo práctico
+    - Crear un servidor Wordpress con su base de datos MySQL
+    - Después mantener persistente los volumenes
+
+    # docker-compose.yaml
+        services:
+        mysql:
+            image: mysql:8.0.3
+            environment:
+            - MYSQL_ROOT_PASSWORD=rootpassword
+            - MYSQL_DATABASE=db_example
+            - MYSQL_USER=adminuser
+            - MYSQL_PASSWORD=adminpass
+        volumes:
+            - ./tmp:/var/lib/mysql
+
+        wordpress:
+            image: wordpress:4.9.1-apache
+            environment:
+                - WORDPRESS_DB_HOST=mysql   # Referenciar con el nombre del servicio
+                - WORDPRESS_DB_USER=adminuser
+                - WORDPRESS_DB_PASSWORD=adminpass
+                - WORDPRESS_DB_NAME=db_example
+            ports:
+                - 9500:80
+
+## Conceptos avanzados de los contenedores
+
+### Redes de Docker
+    - Ver las redes creadas por los contenedores
+        $ docker network ls
+    - Las redes de los contenedores, no soportan DNS, pero las redes creadas por docker compose y propias, si montan un servidor dns propi, por eso no podemos llamar al conenedor por el nombre.
+    - Creando una propia red tipo Bridge
+        $ docker network create --driver bridge mi-red-casa
+
+    - Redes tipo HOST
+        Solo soportada por máquinas Linux
+        $ docker run -d --network host dockercampusmvp/go-hello-world
+        ahora podemos hacer un curl http://localhost:80
+        porque el contenedor está usando el puerto 80 del host
+
+    - Manejo de redes en Docker
+        $ docker network ls 
+        $ docker network rm <id-network>
+        $ docker network prune
+
+### Contextos en Docker
+    - Podemos tener acceso a varios contextos de instalaciones de Docker desde una misma máquina.
+    - Tengo dos MVs con Docker corriendo, puedo definir un contexto para cada MV.
+
+    - Listar contextos
+        $ docker context ls
+    
+    - Crear contexto nuevo
+        $ docker context create shared-vm --docker host=tcp:///shared-mv:2735
+
+
+
+
+
+
+
+
+
 
 
 
