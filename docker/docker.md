@@ -284,6 +284,59 @@ docker rmi	    | Elimina una imagen de mi ordenador
         $ docker context create shared-vm --docker host=tcp:///shared-mv:2735
 
 
+## Compilar Proyectos - Developer APPs
+    - Ejecutar un proyecto de NetCore 2 sin necesidad de tenerlo instalado en la máquina
+        Hay que copiar el proyecto en la raíz
+        # Dockerfile
+            FROM mcr.microsoft.com/dotnet/sdk:2.1
+            WORKDIR /src
+            COPY . .
+            ENTRYPOINT [ "dotnet" ,"run" ] # Ejecutar el proyecto
+
+        $ docker build . -t dotnet-run
+        $ docker run dotnet-run
+
+    - Publicar con dotnet run
+        # Dockerfile
+            FROM mcr.microsoft.com/dotnet/sdk:2.1
+            WORKDIR /src
+            COPY . .
+            # Publicar el proyecto
+            ENTRYPOINT [ "dotnet", "publish", "-o", "out" ]
+
+        Con este método tenemos el problema que no tenemos los binarios, ya que se crean en el contenedor. Necesitamos un bind mount para recuperar la info.
+
+    - Publicar con dotnet run y bind mount con el mismo Docker file
+        $ docker run -v c/jlparres/Docker/dotnet:/src/out dotnet-run
+        $ docker run -v $(pwd)/out:/src/out dotnet-run
+    
+    - Con el Dockerfile anterior y las anteriores instrucciones, tenemos un problema, que siempre que se quiera compilar el código hay que volver a crear la imagen, para ello eliminamos la instrucción COPY . . 
+      e indicamos con bind mounts de donde hay que coger el código y donde tenemos que generar la compilación.
+    
+        # Dockerfile
+            FROM mcr.microsoft.com/dotnet/sdk:2.1
+            WORKDIR /src
+            ENTRYPOINT [ "dotnet", "publish", "-o", "out" ]
+        
+        $ docker run -v C:\jlparres\GIT\Docker\03-Compilar\helloworld-netcore2:/src -v C:\jlparres\GIT\Docker\03-Compilar\helloword-app:/src/out dotnet-run
+
+        El código de desarrollo está en la carpeta "helloworld-netcore2" y el código compilado en la carpeta "helloworld-app"
+
+        - Compliar directamente sin tener un dockerfile. Ahora utilizamos directamente la imagen mcr.microsoft.com/dotnet/sdk:2.1 y lanzamos las instrucciones con bash -c "cd /src && dotnet publish -o out" todo lo demás es lo de antes.
+        $ docker run -v C:\jlparres\GIT\Docker\03-Compilar\helloworld-netcore2:/src -v C:\jlparres\GIT\Docker\03-Compilar\helloword-app:/src/out mcr.microsoft.com/dotnet/sdk:2.1 bash -c "cd /src && dotnet publish -o out"
+
+    - Crear proyectos con dotnet new mvc
+        $ docker run -v C:\jlparres\GIT\Docker\03-Compilar\nuevo-proyecto\netcore21:/app mcr.microsoft.com/dotnet/sdk:2.1 /bin/bash -c "cd app && dotnet new mvc"
+        $ docker run -v C:\jlparres\GIT\Docker\03-Compilar\nuevo-proyecto\net7:/app mcr.microsoft.com/dotnet/sdk:7.0 /bin/bash -c "cd app && dotnet new mvc"
+
+### Utilizando Docker Compose para crear la compilación
+    
+
+
+
+
+
+
 
 
 
