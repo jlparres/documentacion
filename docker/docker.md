@@ -330,9 +330,120 @@ docker rmi	    | Elimina una imagen de mi ordenador
         $ docker run -v C:\jlparres\GIT\Docker\03-Compilar\nuevo-proyecto\net7:/app mcr.microsoft.com/dotnet/sdk:7.0 /bin/bash -c "cd app && dotnet new mvc"
 
 ### Utilizando Docker Compose para crear la compilación
+
+### Ejercicio con Multi-stage
+- Paso 1: Crear aplicación .NET
+    $ docker pull mcr.microsoft.com/dotnet/sdk:6.0
+
+    Crear un directorio en la máqiuna y situarnos en el
+    $ docker run -v /Users/jlparres/Desktop/knowmadmood/GIT/Docker/multi-stage/ejercicioNET/ejercicio:/ejercicio mcr.microsoft.com/dotnet/sdk:6.0 dotnet new mvc -n ejercicioNET
+
+### Depurar contenedores
+    - Ver los logs 
+        $ docker logs <id-contenedor>
     
+    - Copiar ficheros de logs - Contenedor al host
+        $ docker cp <id-contenedor>:logs/log.txt .
+    - Copiar ficher de Host a Contenedor
+        $ docker cp foo.txt <id-contenedor>:/app/foo.txt
+    - Docker Commit -> Crear una imagen a partir de un contenedor en marcha - Necesita parar el contenedor para crear la imagen
+        $ docker commit <id-contentedor-origen> <nombre-nueva-imagen>
+    - Ahora podemos utilizar el nuevo contenedor para depurar y ver los ficheros
+        $ docker run <nombre-nueva-imagen> /bin/bash
 
 
+## Kubernetes
+
+### Repaso de comandos
+    $ docker images
+    $ docker inspect <imagen>
+
+    - Ver las capas que tiene la imagen y vemos los comandos de cada capa
+    $ docker history <image>
+
+    - docker tag
+    $ docker tag eshop/webspa eshop/webspa:other-tag
+
+    - Borrar imagenes
+    $ docker rmi <imagen-id> -f
+
+    - Docker Pull - Obtener imagenes
+    $ docker pull repositorio/organizacion/node
+
+    - Subir imagen a un repositorio, primero añadir un tag a la imagen y luego hacer el push
+    $ docker tag node servidor.com/node:j1.1
+    $ docker push servidor.com/node:j1.1
+
+    - Login en el repositorio privado
+    $ docker login servidor.com
+
+
+    - Ver contenedores
+    $ docker ps
+    $ docker ps -a
+    $ docker logs <contenedor-id>
+    $ docker images
+    $ docker run <imagen>
+    $ docker top <conenedor-id>
+    - Borrar todos los contenedores con los ids
+        $ docker ps -q // muestra los ids 
+    $ docker rm $(docker ps -a -q)
+
+    - Redirección puertos
+        El puerto 1433 interno del contenedor está redirigido al 5433 externo del contendor, nosotros accedemos por el 5433
+    $ docker run -p 5433:1433 node
+    $ docker run -p 5433:1433 -e "ACCEPT_EULA=Y" microsoft/mssql-server-linux -d 
+    $ docker stop <contenedor-id>
+    $ docker kill <contenedor-id>
+
+    - Sesión interactiva
+    $ docker exec -it <contenedor-id> /bin/sh
+
+    - Copiar ficheros
+    $ docker cp <contenedor-id>:/fichero.txt .
+    $ docker cp fichero.txt <contenedor-id>:/mipath/fichero.txt
+
+
+### Fundamentos de Kubernetes
+    - Instalación de minikube
+        $ curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-darwin-arm64
+        $ sudo install minikube-darwin-arm64 /usr/local/bin/minikube
+    - Ejecturar minikube
+        $ minikube start
+    - Interactuar con el cluster
+        $ kubectl get po -A
+        $ minikube kubectl -- get po -A
+            $ alias kubectl="minikube kubectl --"
+        $ minikube dashboard
+
+    - Contexto de kubectl (cuando se tiene varios clusters instalados)
+        $ kubectl config get-contexts
+        $ kubectl get nodes --context minikube
+    - Cambio de conteto 
+        $ kubectl config use-context <nombre-contexto>
+    
+    - Despliegue de PODS con kubectl
+        $ kubectl run my-first-deployment --image=dockercampusmvp/go-hello-world
+    - Eliminar un POD
+        $ kubectl delete pod my-first-deployment 
+
+    - Crear deployments
+        $ kubectl create deployment my-first-deployment --image=dockercampusmvp/go-hello-world
+
+    - Obtener los deployments
+        $ kubectl get deployments
+        $ kubectl get deploy
+    
+    - Eliminar un deployment 
+        $ kubectl delete deploy my-first-deployment
+
+    - Resumen
+        Un pod ejecuta uno o más contenedores
+        No solemos crear pods directamente
+        En su lugar creamos deployments, que indican a k8s qué (y cuántos) contenedores ejecutar. 
+            Kubernetes creará los pods necesarios para asegurar el cumplimiento del deployment
+        El comando `kubectl get pods` nos permite ver los pods
+        El comando `kubectl get deployments` nos permite ver los deployments
 
 
 
