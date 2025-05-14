@@ -446,10 +446,132 @@ docker rmi	    | Elimina una imagen de mi ordenador
         El comando `kubectl get deployments` nos permite ver los deployments
 
 
+    - Ejecicio
+    $ kubectl run hello --image dockercampusmvp/go-hello-world
+    $ kubectl run bb --image busybox --rm --restart=Never -it -- /bin/sh
+
+    --restart={ Never, Always, oNFailure } - posibles valores
+
+    - Exponer Servicios
+        $ kubectl expose pod <nombre-pod> --name <nombre-servicio> --port <puerto>
+        $ kubectl expose pod hello --name hello-svc --port 80
+
+        - Obtener los servicios
+        $ kubectl get svc
+
+        - Asociar un servicio a un POD:
+            $ kubectl run hello --image dockercampusmvp/go-hello-world
+            $ kubectl expose pod hello --name hello-svc --port 80
+            El pod "hello" utilizará siempre el servicio expuesto
+    
+    - Labels - Utilizadas para filtrar campos, que no tiene importancia para el POD
+        $ kubectl label pod <nombre-pod> <var=value> --overwrite
+        $ kubectl get pods --show-labels
+    
+#### Servicios y DNS
+    $ kubectl run hello --image dockercampusmvp/go-hello-world
+    $ kubectl run bb --image busybox --rm --restart=Never -it -- /bin/sh
+        $ wget -qO- http://hello-svc
+    $ kubectl delete pod hello
+        $ wget -qO- http://hello-svc -> error porque no está el pod hello
+    $ kubectl run hello2 --image dockercampusmvp/go-hello-world
+        $ wget -qO- http://hello-svc -> error porque el pod hello2 no está asociado al servicio, debemos asociarlo con labels
+    $ kubectl get pods --show-labels
+    $ kubectl label pod hello2 run=hello --overwrite
+
+#### Ciclo de vida de un POD
+    > Succeeded: el pod se ha ejecutado correctamente
+    > Running: el pod se está ejecutando
+    > Failed: el pod se ha ejecutado con algún error
+    > Pending: el pod debe empezar a ejecutarse (sus contenedores no han sido creados todavía)
+    > Unknown: el estado del pod no se puede obtener. Esto es debido generalmente a algún error de comunicación con el nodo que hospeda el pod
 
 
+#### Despliegues declarativos con ficheros .yaml
+    Obtener la definición yaml de un pod / servicio 
+    $ kubectl get svc hello-svc -o yaml
+
+    Crear un namespace
+    $ kubectl create ns <nombre-namespace>
+
+    Eliminar un namespace (Elimina todo el contenido dentro del namespace)
+    $ kubectl delete ns <espacio-de-nombres>
+
+    Obtener las API-Versions del cluster de Kubernetes para la definición de ficheros .yaml
+    $ kubectl api-versions
+
+    Pasar de imperativo a declarativo
+    $ kubectl run hello --image dockercampusmvp/go-hello-world --dry-run=client -o yaml 
+    > Salida del yaml
+        piVersion: v1
+        kind: Pod
+        metadata:
+        creationTimestamp: null
+        labels:
+            run: hello
+        name: hello
+        spec:
+        containers:
+        - image: dockercampusmvp/go-hello-world
+            name: hello
+            resources: {}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        status: {}
+
+    Comando explain, se utiliza para ver las especificaciones de cualquier recurso de Kubernetes
+    $ kubectl explain pod
+    $ kubectl explain pod.spec
+    $ kubectl explain pod.spec.containers
+    $ kubectl explain pod.spec.containers.ports
+
+    $ kubectl explain svc
+    $ kubectl explain svc.spec
+    $ kubectl explain svc.spec.type
+
+    - Ejecicio práctico. Exponer un servicio para un pod
+        Forma declarativa:
+            $ kubectl expose pod hello --name hellosvc --port 80
+            $ kubectl delete svc hellosvc
+        Forma imperativa
+            $ kubectl expose pod hello --name hellosvc --port 80 --dry-run -o yaml > svc-hello.yaml
+            $ kubectl apply -f svc-hello.yaml
+
+#### Dashboard del Clúster de Kuberentes
+    En minikube tenemos el dashboard habilitado por defecto, solo necesitamos ejecutar lo siguiente
+    $ minikube addons enable dashboard
+    $ minikube addons enable metrics-server
+
+    $ kubectl get svc,deploy,pod -n kubernetes-dashboard
+```
+    jlparres@MacBook-Pro-de-Jorge get-yaml % kubectl get svc,deploy,pod -n kubernetes-dashboard
+    NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+    service/dashboard-metrics-scraper   ClusterIP   10.106.97.118   <none>        8000/TCP   15d
+    service/kubernetes-dashboard        ClusterIP   10.103.195.34   <none>        80/TCP     15d
+
+    NAME                                        READY   UP-TO-DATE   AVAILABLE   AGE
+    deployment.apps/dashboard-metrics-scraper   1/1     1            1           15d
+    deployment.apps/kubernetes-dashboard        1/1     1            1           15d
+
+    NAME                                             READY   STATUS    RESTARTS     AGE
+    pod/dashboard-metrics-scraper-5d59dccf9b-x66ks   1/1     Running   2 (2d ago)   15d
+    pod/kubernetes-dashboard-7779f9b69b-4k9t8        1/1     Running   4 (2d ago)   15d
+```
+    Ver el dashboard
+    $ minikube dashboard
 
 
+#### Port-forward
+    Herramienta para acceder a cualquier pod haciendo un tunel TCP a un puerto del POD
+    $ kubectl port-forward <nombre-pod> <puerto-local>:<puerto-pod>
+
+#### Ejercicio Pod no responde, como redirigir las peticiones
+    $ kubectl run -it --rm --restart=Never --image busybox bb -n ejercicio -- /bin/sh
+
+    $ kubectl run hello2 --image dockercampusmvp/go-hello-world 
+
+### Despliegue de aplicaciones
+    
 
 
 
