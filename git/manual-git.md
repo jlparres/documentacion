@@ -172,31 +172,31 @@ git pull origin main
 ## 8. Otros Comandos Útiles
 
 - **Ver el estado del repositorio:** 
-    ```bash
+```bash
 git status
-    ```
+```
     Muestra qué archivos han cambiado y cuáles están en el área de staging.
 
 - **Ver diferencias entre cambios (diff):** 
-    ```bash
+```bash
 git diff
-    ```
+```
     Muestra las diferencias entre los cambios realizados y la última versión confirmada.
 
 - **Deshacer cambios en área de staging:** 
-    ```bash
+```bash
 git reset HEAD archivo.txt
-    ```
+```
 
 - **Revertir un commit (si ya se ha enviado):** 
-    ```bash
+```bash
 git revert <commit_id>
-    ```
+```
 
 - **Eliminar una rama:** 
-    ```bash
+```bash
 git branch -d nombre-de-la-rama
-    ```
+```
 
 ## 9. Buenas Prácticas
 
