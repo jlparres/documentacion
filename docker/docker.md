@@ -57,10 +57,10 @@ docker rmi	    | Elimina una imagen de mi ordenador
     $ docker volumen ls
 
     Eliminar un volumen
-    $ docker volumen rm <my-volumen>
+    $ docker volume rm <my-volumen>
 
     Eliminar todos los volumenes 
-    $ docker volumen prune
+    $ docker volume prune
 
     Se pueden utilizar Bind Mounts, que son volumenes que referencian a la máquina Host para compartir ficheros con los contenedores.
     Un ejemplo sería montar un servidor SFTP y compartir ahí los archivos.
@@ -282,6 +282,7 @@ docker rmi	    | Elimina una imagen de mi ordenador
     
     - Crear contexto nuevo
         $ docker context create shared-vm --docker host=tcp:///shared-mv:2735
+    
 
 
 ## Compilar Proyectos - Developer APPs
@@ -571,11 +572,215 @@ docker rmi	    | Elimina una imagen de mi ordenador
     $ kubectl run hello2 --image dockercampusmvp/go-hello-world 
 
 ### Despliegue de aplicaciones
+    - Replica Set
+        Definir el número de replicas del pod que queremos
     
+    - Ver replica Sets
+        $ kubectl get rs
+    
+    - Escalar un Replica Set
+        $ kubectl scale rs/hello --replicas=10
+        $ kubectl scale rs/hello --replicas=2
+
+    - Deployments
+        Deployment es un objeto de "alto nivel" pensado, específicamente, para el despliegue de aplicaciones (recuerda, pods en nuestro contexto) sin estado. Al igual que ReplicaSet, un deployment permite ejecutar N pods (réplicas) todos ellos idénticos y garantizar que hay N en todo momento.
+
+        jlparres@MacBook-Pro-de-Jorge ReplicaSet % kubectl apply -f deployment_rs.yaml 
+        deployment.apps/hello created
+        jlparres@MacBook-Pro-de-Jorge ReplicaSet % kubectl get pods
+        NAME                    READY   STATUS    RESTARTS   AGE
+        hello-7b44b6888-4ksl4   1/1     Running   0          7s
+        hello-7b44b6888-75r66   1/1     Running   0          7s
+        hello-7b44b6888-lvfnq   1/1     Running   0          7s
+        hello-7b44b6888-pslcf   1/1     Running   0          7s
+        hello-7b44b6888-q8nk2   1/1     Running   0          7s
+
+        jlparres@MacBook-Pro-de-Jorge ReplicaSet % kubectl get rs
+        NAME              DESIRED   CURRENT   READY   AGE
+        hello-7b44b6888   5         5         5       75s
+
+        Obtener los deployments
+        $ kubectl get deploy
+            NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+            hello   5/5     5            5           2m35s
+
+    - Ver la salida en tiempo de ejecución
+        $ kubectl get pods -o jsonpath="Name: {.metadata.name} Status: { .status.phase } ContainerStatuses[0].state..reason}" --watch
 
 
+### Rolling Updates
+    Crear deployment
+        $ kubectl apply -f deployment.yaml
+    
+    Ver los deployments
+        $ kubectl get deploy
+
+    Ver los Replica Set
+        $ kubectl get rs
+
+    Ver los pods
+        $ kubectl get pods
+
+    Ver el historial de los deployments
+        $ kubectl rollout history deploy/hello
+
+    Ver el status del rolling update
+    $ kubectl rollout status deploy/hello
+        Waiting for deployment "hello" rollout to finish: 1 out of 2 new replicas have been updated...
+
+    Rollback del Rolling Update
+        - Vemos las versiones que hay
+            $ kubectl rollout history deploy/hello
+                deployment.apps/hello 
+                REVISION  CHANGE-CAUSE
+                1         Primera versión
+                2         Actualizar versión 'invalid'
+                3         Actualizar versión 'invalid2'
+        - Seleccionamos la versión a la que queremos ir
+            $ kubectl rollout undo deploy/hello --to-revision 1
+        - Revisamos los replica set y vemos que todas las versiones se han desescalado a replica = 0 menos la del rollback
+            $ kubectl get rs
+                NAME                    DESIRED   CURRENT   READY   AGE
+                explode-v1-77dd9fd85d   1         1         1       4d
+                hello-556686c6d7        0         0         0       4m57s
+                hello-7b44b6888         2         2         2       11m
+                hello-7c6889d7cc        0         0         0       2m53s
+        - Revisamos el history y vemos que la versión 1 acaba de promocionar a la última versión. Esto es porque no se cean más replicaSet, sino que se promociona la versión del rollback a la última versión
+            $ kubectl rollout history deploy/hello
+                deployment.apps/hello 
+                REVISION  CHANGE-CAUSE
+                2         Actualizar versión 'invalid'
+                3         Actualizar versión 'invalid2'
+                4         Primera versión
+
+### Configuración de Contentedores
+    - Configs maps
+        $ kubectl get cm
+
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+            name: democonfig
+        data:
+            Api: http://campusmvp.es
+            Log: Debug
+
+    jlparres@MacBook-Pro-de-Jorge config-maps % kubectl get pods
+    NAME                          READY   STATUS                       RESTARTS      AGE
+    cfg                           0/1     CreateContainerConfigError   0             6s
+
+    - Error porque no tiene configMap
+        $ kubectl get cm
+
+    - Ejecutar el pod 
+        $ kubectl apply -f pod.yaml
+        $ kubectl exec -it cfg /bin/sh
+
+    - Utilizar envFrom en un pod es utilizar toda la referencia del configMap referenciado
 
 
+    - Creando config Map a partir de un fichero en modo imperativo
+        $ kubectl create cm config2 --from-file config.json=config.json
+        
+    - Creando config Map modo imperativo indicando a kubectl que te genere el yaml
+        $ kubectl create cm config2 --from-file config.json=config.json -o yaml --dry-run=client
+        apiVersion: v1
+        data:
+        config.json: |-
+            {
+                "api": {
+                    "server": "http://campusmvp.es",
+                    "version": "v.2.0"
+                }
+            }
+        kind: ConfigMap
+        metadata:
+        creationTimestamp: null
+        name: config2
+
+### Secrets
+    - Creaer un secreto
+        $ kubectl create secret generic demosecret --from-literal API_KEY=9876 --from-literal LOG_LEVEL=Debug
+
+    - Ver secrets
+        $ kubectl get secret demosecret
+
+    - Obtener el yaml del secret
+        $ kubectl get secret demosecret -o yaml
+
+
+### Logs
+    $ kubectl logs <pod>
+
+    Cuando tenemos varias replicas
+    $ kubectl logs pod -l <etiqueta=valor>
+
+
+### Indicar comando inicial al POD
+    Podemos hacer que el pod ejecute un Script
+
+    apiVersion: v1
+    kind: Pod
+    metadata:
+        name: command
+    spec:
+        containers:
+        - name: main
+            image: alpine
+            command: ["/bin/sh", "-c", "while true; do echo hello; sleep 10;done"]
+    restartPolicy: Never
+
+    - Con argumentos
+apiVersion: v1
+kind: Pod
+metadata:
+  name: command
+spec:
+  containers:
+  - name: main
+    image: alpine
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo hello; sleep 10;done"]
+  restartPolicy: Never
+
+### Exponer la App al exterior
+    - Pod BusyBox
+        $ kubectl run bb --image busybox -it --rm --restart Never -- /bin/sh
+    
+    - Ingress
+        $ kubectl get ing
+        $ kubectl describe ing <recurso-ingress>
+
+    - Instalar ingres en minikube
+        $ minikube addons enable ingress
+        $ kubectl get svc -n ingress-nginx
+
+## PODS a Fondo
+### HEALTHCHECK
+    Dokerfile
+        FROM dockercampusmvp/demoprobes
+        RUN apt-get update && apt-get install curl -y
+        HEALTHCHECK CMD curl --fail http://localhost || exit 1
+
+
+### Recursos
+    Describe minikube
+    $ kubectl describe node minikube
+    Top
+    $ kubectl top nodes
+    Escalar pods 
+    $ kubectl scale deploy/hello-world-res --replica=2
+
+### POD en varios contenedores
+    Obtener la info:
+    $ kubectl get pod dos-contenedores -o jsonpath="{range .status.containerStatuses[*]}{'CONTAINER:'}{@.name} {'READY:' }{@.ready} {'RESTARTS'}:{@.restartCount}{'\n'}{end}"
+
+    Copiar un fichero de un pod a otro
+    $ kubectl cp <fichero-orign> <nombre-pod>:<fichero-destino>
+    $ kubectl cp <namespace>/<nombre-pod>:<ruta-pod> <directorio-local>
+
+    Comando debug
+    $ kubectl debug -it --target=<contenedor> --image <imagen-contenedor-efímero> <pod>
 
 
 
